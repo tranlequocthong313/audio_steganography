@@ -20,6 +20,7 @@ public class Embedding {
         int wav_header = 44;
         while ((audioLength = audioIn.read(audioBuffer)) > 0 && (fileLength = fileIn.read(fileBuffer)) > 0) {
             for (int i = 0; i < fileLength; i++) {
+            	// lay 6 bit cua audio + tung bit mot cua embed file
             	audioBuffer[i + wav_header] = (byte) ((audioBuffer[i + wav_header] & 0xFE) | (fileBuffer[i] & 0x01));
             }
             out.write(audioBuffer, 0, audioLength);
