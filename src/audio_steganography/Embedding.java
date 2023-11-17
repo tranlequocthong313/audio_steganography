@@ -6,7 +6,7 @@ import java.io.IOException;
 public class Embedding {
 	public static void embed() throws IOException {
 		String audioPath = "C:\\Users\\thanh\\Library\\Workspace\\AudioSteganography\\audio_steganography\\input.wav";
-		String embedPath = "C:\\Users\\thanh\\Library\\Workspace\\AudioSteganography\\audio_steganography\\message.mp4";
+		String embedPath = "C:\\Users\\thanh\\Library\\Workspace\\AudioSteganography\\audio_steganography\\message_image2.jpg";
 		String outputPath = "C:\\Users\\thanh\\Library\\Workspace\\AudioSteganography\\audio_steganography\\output.wav";
 		
         File audioFile = new File(audioPath);
@@ -40,7 +40,7 @@ public class Embedding {
             	// lay 7 bit cua audio + tung bit mot cua embed file
             	//audioBuffer[i + wav_header] = (byte) ((audioBuffer[i + wav_header] & 0xFE) | (fileBuffer[i] & 0x01));
             	byte temp = (byte)fileBuffer[j];
-            	audioBuffer[i + wav_header] = (byte) ((audioBuffer[i + wav_header] & 0xFE) | ((temp & 0x80) >> 7));
+            	audioBuffer[i + wav_header] = (byte) ((audioBuffer[i + wav_header] & 0xFE) | (((temp & 0x80) >> 7) & 0x01));
             	temp = (byte)fileBuffer[j];
             	audioBuffer[i + wav_header + 1] = (byte) ((audioBuffer[i + wav_header + 1] & 0xFE) | ((temp & 0x40) >> 6));
             	temp = (byte)fileBuffer[j];
