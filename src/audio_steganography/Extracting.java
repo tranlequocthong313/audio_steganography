@@ -26,7 +26,7 @@ public class Extracting {
             // Extract the data from the least significant bit of each byte
         	int j = 0;
         	
-            for (int i = wav_header; i < audioLength && j < outputLength; i = i + 8) {
+            for (int i = wav_header; i < audioLength || j < outputLength; i = i + 8) {
             	
                 byte data = (byte) (((audioBuffer[i] & 0x01) << 7) | ((audioBuffer[i + 1] & 0x01) << 6)
                 		| ((audioBuffer[i + 2] & 0x01) << 5) | ((audioBuffer[i + 3] & 0x01) << 4)
@@ -36,6 +36,8 @@ public class Extracting {
                 out.write(data);
                 
                 j++;
+                
+                if (j == outputLength) break;
                 //System.out.print(data);
             }
         }

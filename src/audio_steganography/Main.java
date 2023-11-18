@@ -9,6 +9,7 @@ public class Main {
 				System.out.println("1. Embed\n2. Extract\n0.Exit\nYou choose: ");
 				i = sc.nextInt();
 				if (i == 1) Embedding.embed();
+				//if (i == 1) Embedding.hideDataInAudio();
 				else if (i == 2) Extracting.extract();
 				else i = 0;
 			} while (i != 0);
