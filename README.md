@@ -5,10 +5,6 @@
 
 ## Hướng dẫn Chạy Dự Án Flask
 
-Dưới đây là các bước để chạy dự án Flask trên cả Windows (sử dụng Command Prompt) và Bash (Linux, MacOS).
-
-### Cài Đặt
-
 1. **Clone Repository:**
    ```bash
    git clone https://github.com/tranlequocthong313/audio_steganography.git
