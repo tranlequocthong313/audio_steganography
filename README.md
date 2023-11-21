@@ -1,4 +1,3 @@
-
 # Audio Steganography
 
 Ứng dụng giúp che giấu file trong file audio (.wav, ...)
@@ -39,10 +38,10 @@
 6. **Chạy ứng dụng:**
    - **Windows:**
    ```bash
-   set FLASK_APP=app/routes.py && flask run --debug
+   set FLASK_APP=app && flask run --debug
    ```
 
    - **Bash:**
    ```bash
-   export FLASK_APP='app/routes.py' && flask run --debug
+   export FLASK_APP='app' && flask run --debug
    ```
