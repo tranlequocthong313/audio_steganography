@@ -1,0 +1,61 @@
+{% extends 'base.html' %} {%block title%}Extract file{% endblock%} {%block
+description%} The <strong>Extract</strong> page of the
+<strong>Audio Steganography</strong> application allows you to extract embedded
+data from an audio file. Simply choose the audio file that contains the embedded
+data and, if protected with a password, enter the corresponding password. Then,
+click the "<strong>Extract</strong>" button to start the data extraction
+process. The result will be the original data that was embedded within the audio
+file. {% endblock%} {% block content %} {% if extracted_info %}
+<div class="alert alert-success mt-3">
+  <p>
+    <strong>Extracted File Information:</strong>
+    <br />
+    <strong>File Name:</strong> {{ extracted_info.filename }}
+    <br />
+    <strong>File Size:</strong> {{ extracted_info.size }}
+  </p>
+  <button
+    onclick="download('{{active_tab}}', '{{extracted_info.filename}}')"
+    class="btn btn-primary"
+    role="button"
+  >
+    Download
+  </button>
+</div>
+{% endif %}
+<form
+  class="mt-4"
+  action="{% if active_tab == 'embed' %}/embed{% else %}/extract{% endif %}"
+  method="POST"
+  enctype="multipart/form-data"
+>
+  <div class="mb-3">
+    <label for="carrier" class="form-label">Carrier file</label>
+    <input
+      type="file"
+      accept=".wav"
+      name="carrier"
+      id="carrier"
+      class="form-control"
+      required
+    />
+  </div>
+
+  <div class="my-4 alert alert-light">
+    <label for="password" class="form-label">Password</label>
+    <div class="password-wrapper">
+      <input
+        type="password"
+        name="password"
+        id="password"
+        class="form-control password-input"
+      />
+    </div>
+    <span class="badge bg-info mt-1">Optional</span>
+  </div>
+
+  <button type="submit" class="btn btn-primary">
+    {% if active_tab == 'embed' %}Embed{% else %}Extract{% endif %}
+  </button>
+</form>
+{% endblock %}

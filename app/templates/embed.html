@@ -1,0 +1,78 @@
+{% extends 'base.html'%} {% block title %} Embed file {% endblock %} {% block
+description %} The <strong>Embed</strong> page of the
+<strong>Audio Steganography</strong> application provides the functionality to
+embed data into an audio file. You can select an audio file as the "<strong
+  >Carrier File</strong
+>" and another file containing the data you wish to embed. If you want to secure
+the information, you can also set an optional password to encrypt the data.
+After providing the necessary information, click the "<strong>Embed</strong>"
+button to initiate the embedding process. The result will be a new audio file
+containing the embedded data. {% endblock %} {% block content %} {% if
+embedded_info %}
+<div class="alert alert-success mt-3">
+  <p>
+    <strong>Embedded File Information:</strong>
+    <br />
+    <strong>File Name:</strong> {{ embedded_info.filename }}
+    <br />
+    <strong>File Size:</strong> {{ embedded_info.size }}
+  </p>
+  <button
+    onclick="download('{{active_tab}}', '{{embedded_info.filename}}')"
+    class="btn btn-primary"
+    role="button"
+  >
+    Download
+  </button>
+</div>
+{% endif %}
+<form
+  class="mt-4"
+  action="{% if active_tab == 'embed' %}/embed{% else %}/extract{% endif %}"
+  method="POST"
+  enctype="multipart/form-data"
+>
+  <div class="mb-3">
+    <label for="carrier" class="form-label">Carrier file</label>
+    <input
+      type="file"
+      accept=".wav"
+      name="carrier"
+      id="carrier"
+      class="form-control"
+      required
+    />
+  </div>
+
+  <div class="mb-3">
+    <label for="data" class="form-label">Data file</label>
+    <input type="file" name="data" id="data" class="form-control" required />
+  </div>
+
+  <div class="my-4 alert alert-light">
+    <label for="password" class="form-label">Password</label>
+    <div class="password-wrapper">
+      <input
+        type="password"
+        name="password"
+        id="password"
+        class="form-control password-input"
+      />
+    </div>
+    <label for="confirm-password" class="form-label mt-2"
+      >Confirm Password</label
+    >
+    <input
+      type="password"
+      name="confirm-password"
+      id="confirm-password"
+      class="form-control password-input"
+    />
+    <span class="badge bg-info mt-1">Optional</span>
+  </div>
+
+  <button type="submit" class="btn btn-primary">
+    {% if active_tab == 'embed' %}Embed{% else %}Extract{% endif %}
+  </button>
+</form>
+{% endblock %}
