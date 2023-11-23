@@ -14,6 +14,11 @@ function download(activeTab, filename) {
             a.click()
             document.body.removeChild(a)
             URL.revokeObjectURL(blobUrl)
+        })
+        .catch(e => {
+            console.log(e)
+        })
+        .finally(() => {
             location.reload()
         })
 }

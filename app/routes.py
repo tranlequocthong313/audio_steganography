@@ -1,6 +1,6 @@
 import os
 
-from flask import render_template, request, redirect, session, flash, url_for
+from flask import render_template, request, redirect, session, flash, url_for, jsonify
 
 from app import router
 from app.steganography import Steganography, header_lengths
@@ -98,4 +98,4 @@ def download(active_tab, filename):
         return response, 200
     except:
         flash("Internal server error.", category="error")
-        return 500
+        return jsonify({"message": "Internal server error"}), 500
