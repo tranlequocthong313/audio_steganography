@@ -4,3 +4,4 @@ test.sh
 .vscode
 .pytest_cache
 .venv
+uploads

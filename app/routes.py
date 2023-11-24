@@ -4,7 +4,7 @@ from flask import render_template, request, redirect, session, flash, url_for, j
 
 from app import router
 from app.steganography import Steganography, header_lengths
-from app.utils import format_size, get_file_path, respond_file
+from app.utils import format_size, get_file_path, respond_file 
 from app.file import write
 
 
@@ -43,8 +43,11 @@ def embed():
             hidden_filename,
             skipped_bytes=header_lengths[file_format] + 1,
         )
-    except Exception as e:
+    except OverflowError as e:
         flash(str(e), category="danger")
+        return redirect(url_for(".embed_page"))
+    except Exception as e:
+        flash("Internal server error.", category="danger")
         return redirect(url_for(".embed_page"))
 
     write(get_file_path(carrier_filename), embedded_bytes)
@@ -66,8 +69,11 @@ def extract():
     info = None
     try:
         info = steganography.extract(carrier_bytes, header_lengths[file_format] + 1)
-    except Exception as e:
+    except ValueError as e:
         flash(str(e), category="danger")
+        return redirect(url_for(".extract_page"))
+    except Exception as e:
+        flash("Internal server error.", category="danger")
         return redirect(url_for(".extract_page"))
 
     filename = info["filename"].decode(encoding="utf-8")
