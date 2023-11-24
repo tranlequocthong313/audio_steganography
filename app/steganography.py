@@ -1,3 +1,6 @@
+from threading import Thread
+
+
 def bits_to_bytes(bits):
     tmp = "".join(map(str, bits))
     tmp = [tmp[i : i + 8] for i in range(0, len(tmp), 8)]
@@ -22,14 +25,14 @@ class Header:
         Header format: STAMP + file_name_length + # + file_name + data_size + # + data
         Example: AS8#demo.txt12#Hello world!
         """
-        result = self.STAMP.encode()
-        result += str(len(filename)).encode()
+        result = str(len(filename)).encode()
         result += "#".encode()
         result += filename.encode()
         result += str(len(hidden_bytes)).encode()
         result += "#".encode()
         result += hidden_bytes
-        return result
+        full_length = str(len(result)).encode() + "#".encode()
+        return self.STAMP.encode() + full_length + result
 
     def validate(self, bytes):
         """
@@ -41,10 +44,6 @@ class Header:
         """
         This function is used to extract the header and data bytes that has been attached to the embedded bytes
         """
-        if self.validate(embedded_bytes) == False:
-            raise ValueError("This is not an embedded file.")
-
-        embedded_bytes = embedded_bytes[len(self.STAMP) :]  # skip stamp bytes
         extracted_info = []
         i, j = 0, 0
 
@@ -70,6 +69,21 @@ class Steganography:
     def __init__(self) -> None:
         self.header = Header()
 
+    def __embed(self, bits, carrier_bytes, skipped_bytes):
+        """
+        This function helps put bits into audio bytes
+        """
+        j = skipped_bytes
+
+        for i in range(len(bits)):
+            carrier_bytes[j] = (
+                carrier_bytes[j] & 0xFE
+            )  # reset last bit of current carrier's byte to 0
+            carrier_bytes[j] = (
+                carrier_bytes[j] | bits[i]
+            )  # change last bit of current carrier's byte to current bit of hidden bits
+            j += 1
+
     def embed(self, hidden_bytes, carrier_bytes, filename, skipped_bytes=0):
         """
         This function is used to embed the bytes that need to be hidden.
@@ -83,16 +97,24 @@ class Steganography:
             raise OverflowError("Carrier file size is too small for embedding.")
 
         bits = [int(bit) for byte in hidden_bytes for bit in f"{byte:08b}"]
-        j = skipped_bytes
 
-        for i in range(len(bits)):
-            carrier_bytes[j] = (
-                carrier_bytes[j] & 0xFE
-            )  # reset last bit of current carrier's byte to 0
-            carrier_bytes[j] = (
-                carrier_bytes[j] | bits[i]
-            )  # change last bit of current carrier's byte to current bit of hidden bits
-            j += 1
+        thread1 = Thread(
+            target=self.__embed,
+            args=(bits[: (len(bits) // 2)], carrier_bytes, skipped_bytes),
+        )
+        thread2 = Thread(
+            target=self.__embed,
+            args=(
+                bits[(len(bits) // 2) :],
+                carrier_bytes,
+                skipped_bytes + len(bits) // 2,
+            ),
+        )
+
+        thread1.start()
+        thread2.start()
+        thread1.join()
+        thread2.join()
 
         return bytes(carrier_bytes)
 
@@ -104,8 +126,37 @@ class Steganography:
         skipped_bytes = max(skipped_bytes, 0)
         bits = []
 
+        index = 0
         for i in range(skipped_bytes, len(embedded_bytes)):
-            bit = embedded_bytes[i] & 0x1  # extract last bit of current embedded byte's
+            if len(bits) == len(self.header.STAMP) * 8:
+                if self.header.validate(bits_to_bytes(bits)) == False:
+                    raise ValueError("This is not an embedded file.")
+                else:
+                    index = i
+                    bits = []
+                    break
+            else:
+                bit = (
+                    embedded_bytes[i] & 0x1
+                )  # extract last bit of current embedded byte's
+                bits.append(bit)
+
+        i, j = 0, 0
+        length = 0
+        for k in range(index, len(embedded_bytes)):
+            bit = embedded_bytes[k] & 0x1  # extract last bit of current embedded byte's
+            bits.append(bit)
+            if len(bits) % 8 == 0:
+                if ord(bits_to_bytes(bits[j : i + 1]).decode("utf-8")) == ord("#"):
+                    length = int("".join(map(chr, bits_to_bytes(bits[0:j]))))
+                    index = k + 1
+                    break
+                j = i + 1
+            i += 1
+
+        bits = []
+        for k in range(index, (length * 8) + 1):
+            bit = embedded_bytes[k] & 0x1  # extract last bit of current embedded byte's
             bits.append(bit)
 
         return self.header.extract(bits_to_bytes(bits))
@@ -114,28 +165,3 @@ class Steganography:
 header_lengths = {
     "wav": 44,
 }
-
-
-# if __name__ == '__main__':
-#     hidden_path = 'app/img.jpg'
-#     hidden_filename = 'img.jpg'
-#     carrier_filename = 'song2.wav'
-#     file_format = 'wav'
-#     embedded_filename = f'embedded.{file_format}'
-
-#     with open(hidden_path, 'rb') as f:
-#         hidden_bytes = bytearray(f.read())
-#     with open(carrier_filename, 'rb') as f:
-#         carrier_bytes = bytearray(f.read())
-
-#     steganography = Steganography()
-#     embedded_bytes = steganography.embed(hidden_bytes, carrier_bytes, hidden_filename, skipped_bytes=header_lengths[file_format]+1)
-
-#     with open(embedded_filename, 'wb') as f:
-#         f.write(embedded_bytes)
-
-#     with open(embedded_filename, 'rb') as f:
-#         embedded_bytes = bytearray(f.read())
-#     info = steganography.extract(embedded_bytes, header_lengths[file_format] + 1)
-#     with open(info['filename'], 'wb') as f:
-#         f.write(info['data'])

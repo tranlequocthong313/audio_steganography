@@ -23,6 +23,10 @@ file. {% endblock%} {% block content %} {% if extracted_info %}
   </button>
 </div>
 {% endif %}
+<div class="loading alert alert-info mt-3 text-center">
+  <strong><i>Progressing</i></strong>
+</div>
+
 <form
   class="mt-4"
   action="{% if active_tab == 'embed' %}/embed{% else %}/extract{% endif %}"
@@ -30,7 +34,9 @@ file. {% endblock%} {% block content %} {% if extracted_info %}
   enctype="multipart/form-data"
 >
   <div class="mb-3">
-    <label for="carrier" class="form-label">Carrier file</label>
+    <label for="carrier" class="form-label"
+      >Carrier file <strong><i>(*.wav)</i></strong></label
+    >
     <input
       type="file"
       accept=".wav"
@@ -54,7 +60,7 @@ file. {% endblock%} {% block content %} {% if extracted_info %}
     <span class="badge bg-info mt-1">Optional</span>
   </div>
 
-  <button type="submit" class="btn btn-primary">
+  <button type="submit" class="btn btn-primary" onclick="showProgress()">
     {% if active_tab == 'embed' %}Embed{% else %}Extract{% endif %}
   </button>
 </form>

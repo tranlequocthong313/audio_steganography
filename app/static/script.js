@@ -23,3 +23,8 @@ function download(activeTab, filename) {
         })
 }
 
+function showProgress() {
+    document.querySelector('form').style.display = 'none'
+    document.querySelector('.loading').style.display = 'block'
+    document.querySelector('form').submit()
+}
