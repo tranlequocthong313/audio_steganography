@@ -4,8 +4,10 @@ from flask import render_template, request, redirect, session, flash, url_for, j
 
 from app import router
 from app.steganography import Steganography, header_lengths
-from app.utils import format_size, get_file_path, respond_file 
+from app.utils import format_size, get_file_path, respond_file
 from app.file import write
+
+import time
 
 
 @router.get("/")
@@ -37,12 +39,14 @@ def embed():
     steganography = Steganography()
     embedded_bytes = None
     try:
+        start_time = time.time()
         embedded_bytes = steganography.embed(
             hidden_bytes,
             carrier_bytes,
             hidden_filename,
             skipped_bytes=header_lengths[file_format] + 1,
         )
+        print("--- embed %s seconds ---" % (time.time() - start_time))
     except OverflowError as e:
         flash(str(e), category="danger")
         return redirect(url_for(".embed_page"))
@@ -68,7 +72,9 @@ def extract():
     steganography = Steganography()
     info = None
     try:
+        start_time = time.time()
         info = steganography.extract(carrier_bytes, header_lengths[file_format] + 1)
+        print("--- extract %s seconds ---" % (time.time() - start_time))
     except ValueError as e:
         flash(str(e), category="danger")
         return redirect(url_for(".extract_page"))

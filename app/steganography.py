@@ -22,10 +22,10 @@ class Header:
         This function takes in an array of data bytes and the name of the original file,
         then it returns an array of bytes with the header attached.
 
-        Header format: STAMP + file_name_length + # + file_name + data_size + # + data
-        Example: AS8#demo.txt12#Hello world!
+        Header format: STAMP + full_length + # + file_name_length + # + file_name + data_size + # + data
+        Example: AS25#8#demo.txt12#Hello world!
         """
-        result = str(len(filename)).encode()
+        result = str(len(filename.encode())).encode()
         result += "#".encode()
         result += filename.encode()
         result += str(len(hidden_bytes)).encode()
