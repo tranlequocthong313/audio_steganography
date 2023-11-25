@@ -16,38 +16,53 @@ class Header:
 
     def __init__(self):
         self.STAMP = "AS"  # This is used for indentify embedded files of this app
+        self.STAMP_PASS = "PAS"  # This is used for indentify embedded files of this app
 
-    def make_header(self, hidden_bytes, filename):
+    def make_header(self, hidden_bytes, filename, password=None):
         """
         This function takes in an array of data bytes and the name of the original file,
         then it returns an array of bytes with the header attached.
 
         Header format: STAMP + full_length + # + file_name_length + # + file_name + data_size + # + data
-        Example: AS25#8#demo.txt12#Hello world!
+        Example: PAS35#8#password8#demo.txt12#Hello world!
         """
-        result = str(len(filename.encode())).encode()
+        result = b""
+        if password:
+            result += str(len(password.encode())).encode()
+            result += "#".encode()
+            result += password.encode()
+        result += str(len(filename.encode())).encode()
         result += "#".encode()
         result += filename.encode()
         result += str(len(hidden_bytes)).encode()
         result += "#".encode()
         result += hidden_bytes
         full_length = str(len(result)).encode() + "#".encode()
-        return self.STAMP.encode() + full_length + result
+        return (
+            (self.STAMP_PASS.encode() if password else self.STAMP.encode())
+            + full_length
+            + result
+        )
 
     def validate(self, bytes):
         """
         This function is used to check if the header is valid
         """
-        return "".join(map(chr, bytes[: len(self.STAMP)])) == self.STAMP
+        if "".join(map(chr, bytes[: len(self.STAMP)])) == self.STAMP:
+            return 0
+        elif "".join(map(chr, bytes[: len(self.STAMP_PASS)])) == self.STAMP_PASS:
+            return 1
+        else:
+            return 2
 
-    def extract(self, embedded_bytes):
+    def extract(self, embedded_bytes, password=None):
         """
         This function is used to extract the header and data bytes that has been attached to the embedded bytes
         """
         extracted_info = []
         i, j = 0, 0
 
-        while len(extracted_info) < 2:
+        while len(extracted_info) < (3 if password else 2):
             j = i
             while embedded_bytes[j] != ord("#"):
                 j += 1
@@ -55,10 +70,17 @@ class Header:
             extracted_info.append(embedded_bytes[j + 1 : j + 1 + length])
             i = j + 1 + length
 
-        return {
-            "filename": bytes(extracted_info[0]),
-            "data": bytes(extracted_info[1]),
-        }
+        if password:
+            return {
+                "password": bytes(extracted_info[0]),
+                "filename": bytes(extracted_info[1]),
+                "data": bytes(extracted_info[2]),
+            }
+        else:
+            return {
+                "filename": bytes(extracted_info[0]),
+                "data": bytes(extracted_info[1]),
+            }
 
 
 class Steganography:
@@ -84,14 +106,16 @@ class Steganography:
             )  # change last bit of current carrier's byte to current bit of hidden bits
             j += 1
 
-    def embed(self, hidden_bytes, carrier_bytes, filename, skipped_bytes=0):
+    def embed(
+        self, hidden_bytes, carrier_bytes, filename, password=None, skipped_bytes=0
+    ):
         """
         This function is used to embed the bytes that need to be hidden.
         It accepts the bytes of the original file, the bytes of the carrier file
         and the number of bytes to be ignored if any.
         """
         skipped_bytes = max(skipped_bytes, 0)
-        hidden_bytes = self.header.make_header(hidden_bytes, filename)
+        hidden_bytes = self.header.make_header(hidden_bytes, filename, password)
 
         if len(hidden_bytes) * 8 > len(carrier_bytes) - skipped_bytes:
             raise OverflowError("Carrier file size is too small for embedding.")
@@ -118,7 +142,7 @@ class Steganography:
 
         return bytes(carrier_bytes)
 
-    def extract(self, embedded_bytes, skipped_bytes=0):
+    def extract(self, embedded_bytes, password=None, skipped_bytes=0):
         """
         This function is used to extract the original bytes in embedded bytes
         and the number of bytes to be ignored if any.
@@ -128,9 +152,15 @@ class Steganography:
 
         index = 0
         for i in range(skipped_bytes, len(embedded_bytes)):
-            if len(bits) == len(self.header.STAMP) * 8:
-                if self.header.validate(bits_to_bytes(bits)) == False:
+            if (
+                len(bits)
+                == len(self.header.STAMP_PASS if password else self.header.STAMP) * 8
+            ):
+                result = self.header.validate(bits_to_bytes(bits))
+                if result == 2:
                     raise ValueError("This is not an embedded file.")
+                elif result == 1 and password == None:
+                    raise ValueError("Require password.")
                 else:
                     index = i
                     bits = []
@@ -159,7 +189,7 @@ class Steganography:
             bit = embedded_bytes[k] & 0x1  # extract last bit of current embedded byte's
             bits.append(bit)
 
-        return self.header.extract(bits_to_bytes(bits))
+        return self.header.extract(bits_to_bytes(bits), password)
 
 
 header_lengths = {

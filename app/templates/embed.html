@@ -35,6 +35,7 @@ embedded_info %}
   action="{% if active_tab == 'embed' %}/embed{% else %}/extract{% endif %}"
   method="POST"
   enctype="multipart/form-data"
+  onsubmit="showProgress()"
 >
   <div class="mb-3">
     <label for="carrier" class="form-label"
@@ -79,7 +80,7 @@ embedded_info %}
     <span class="badge bg-info mt-1">Optional</span>
   </div>
 
-  <button type="submit" class="btn btn-primary" onclick="showProgress()">
+  <button type="submit" class="btn btn-primary">
     {% if active_tab == 'embed' %}Embed{% else %}Extract{% endif %}
   </button>
 </form>

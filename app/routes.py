@@ -1,13 +1,13 @@
 import os
+import time
 
 from flask import render_template, request, redirect, session, flash, url_for, jsonify
 
 from app import router
 from app.steganography import Steganography, header_lengths
+from app.cryptography import Cryptography
 from app.utils import format_size, get_file_path, respond_file
 from app.file import write
-
-import time
 
 
 @router.get("/")
@@ -30,6 +30,12 @@ def extract_page():
 
 @router.post("/embed")
 def embed():
+    password = request.form.get("password")
+    confirm_password = request.form.get("confirm-password")
+    if password.strip() != confirm_password.strip():
+        flash("Passwords must match.", category="danger")
+        return redirect(url_for(".embed_page"))
+
     carrier_filename = request.files["carrier"].filename
     hidden_filename = request.files["data"].filename
     file_format = "wav"
@@ -37,13 +43,17 @@ def embed():
     hidden_bytes = bytearray(request.files["data"].stream.read())
 
     steganography = Steganography()
+    cryptography = Cryptography()
     embedded_bytes = None
     try:
+        if password:
+            hidden_bytes = cryptography.encrypt(hidden_bytes, password.encode())
         start_time = time.time()
         embedded_bytes = steganography.embed(
             hidden_bytes,
             carrier_bytes,
             hidden_filename,
+            password,
             skipped_bytes=header_lengths[file_format] + 1,
         )
         print("--- embed %s seconds ---" % (time.time() - start_time))
@@ -51,6 +61,7 @@ def embed():
         flash(str(e), category="danger")
         return redirect(url_for(".embed_page"))
     except Exception as e:
+        print(e)
         flash("Internal server error.", category="danger")
         return redirect(url_for(".embed_page"))
 
@@ -68,17 +79,29 @@ def embed():
 def extract():
     file_format = "wav"
     carrier_bytes = bytearray(request.files["carrier"].stream.read())
+    password = request.form.get("password")
 
     steganography = Steganography()
+    cryptography = Cryptography()
     info = None
     try:
         start_time = time.time()
-        info = steganography.extract(carrier_bytes, header_lengths[file_format] + 1)
+        info = steganography.extract(
+            carrier_bytes, password, header_lengths[file_format] + 1
+        )
+        if "password" in info and password:
+            if password == info.get("password").decode("utf-8"):
+                info["data"] = cryptography.decrypt(
+                    bytearray(info["data"]), password.encode()
+                )
+            else:
+                raise KeyError("Password must match.")
         print("--- extract %s seconds ---" % (time.time() - start_time))
-    except ValueError as e:
+    except (ValueError, KeyError) as e:
         flash(str(e), category="danger")
         return redirect(url_for(".extract_page"))
     except Exception as e:
+        print(e)
         flash("Internal server error.", category="danger")
         return redirect(url_for(".extract_page"))
 
@@ -108,6 +131,7 @@ def download(active_tab, filename):
 
         flash("Downloaded successfully.", category="success")
         return response, 200
-    except:
+    except Exception as e:
+        print(e)
         flash("Internal server error.", category="error")
         return jsonify({"message": "Internal server error"}), 500
