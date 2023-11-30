@@ -1,6 +1,5 @@
 import hashlib
 from Crypto.Cipher import DES
-from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 
 def generate_des_key_from_string(input_string):
@@ -34,13 +33,12 @@ def des_decrypt(ciphertext, des_key):
 with open('./testdata/filetest.docx', 'rb') as file:
     input_bytes = file.read()
 
-# Chuỗi đầu vào ngẫu nhiên
-random_input_string = get_random_bytes(16).hex()
-print(random_input_string)
-# Sinh khóa DES từ chuỗi ngẫu nhiên
-des_key = generate_des_key_from_string(random_input_string)
-print(des_key)
+# Chuỗi đầu vào
+input_string = "huynhduydong"
 
+# Sinh khóa DES từ chuỗi
+des_key = generate_des_key_from_string(input_string)
+print(des_key)
 # Mã hóa
 encrypted_bytes = des_encrypt(input_bytes, des_key)
 print("Encrypted:", encrypted_bytes)
