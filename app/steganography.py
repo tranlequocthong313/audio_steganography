@@ -185,7 +185,7 @@ class Steganography:
             i += 1
 
         bits = []
-        for k in range(index, (length * 8) + 1):
+        for k in range(index, index + 1 + (length * 8)):
             bit = embedded_bytes[k] & 0x1  # extract last bit of current embedded byte's
             bits.append(bit)
 
