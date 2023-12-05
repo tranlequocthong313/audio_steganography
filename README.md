@@ -12,9 +12,6 @@ Dự án Audio Steganography là một ứng dụng nhằm giấu các loại fi
 
 - Hỗ Trợ Nền Tảng Đa Dạng: Dự án này có thể chạy trên nền tảng Windows, Linux, và macOS, giúp người dùng trải nghiệm linh hoạt.
 
-## Demo
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/rlfJwSblkO8/0.jpg)](https://www.youtube.com/watch?v=rlfJwSblkO8)
-
 ## Hướng dẫn Chạy Dự Án Flask
 
 1. **Clone Repository:**

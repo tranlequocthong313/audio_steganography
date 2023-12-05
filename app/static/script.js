@@ -1,4 +1,7 @@
 function download(activeTab, filename) {
+    document.querySelector('form').style.display = 'none'
+    document.querySelector('.loading').style.display = 'block'
+
     fetch(`/download/${activeTab}/${filename}`, {
         method: 'GET'
     })
