@@ -38,6 +38,10 @@ def embed():
 
     carrier_filename = request.files["carrier"].filename
     hidden_filename = request.files["data"].filename
+    if not carrier_filename.endswith(".wav"):
+        flash("Carrier file must be file wav.", category="danger")
+        return redirect(url_for(".embed_page"))
+
     file_format = "wav"
     carrier_bytes = bytearray(request.files["carrier"].stream.read())
     hidden_bytes = bytearray(request.files["data"].stream.read())
@@ -77,6 +81,9 @@ def embed():
 
 @router.post("/extract")
 def extract():
+    if not request.files["carrier"].filename.endswith(".wav"):
+        flash("Embedded file must be file wav.", category="danger")
+        return redirect(url_for(".extract_page"))
     file_format = "wav"
     carrier_bytes = bytearray(request.files["carrier"].stream.read())
     password = request.form.get("password")
@@ -90,14 +97,12 @@ def extract():
             carrier_bytes, password, header_lengths[file_format] + 1
         )
         if "password" in info and password:
-            if password == info.get("password").decode("utf-8"):
-                info["data"] = cryptography.decrypt(
-                    bytearray(info["data"]), password.encode()
-                )
-            else:
-                raise KeyError("Password must match.")
+            info["data"] = cryptography.decrypt(
+                bytearray(info["data"]), password.encode()
+            )
         print("--- extract %s seconds ---" % (time.time() - start_time))
-    except (ValueError, KeyError) as e:
+    except ValueError as e:
+        print(e)
         flash(str(e), category="danger")
         return redirect(url_for(".extract_page"))
     except Exception as e:
