@@ -16,7 +16,7 @@ class Header:
 
     def __init__(self):
         self.STAMP = "AS"  # This is used for indentify embedded files of this app
-        self.STAMP_PASS = "PAS"  # This is used for indentify embedded files of this app
+        self.STAMP_PASS = "ASP"  # This is used for indentify embedded files of this app
 
     def make_header(self, hidden_bytes, filename, password=None):
         """
@@ -24,7 +24,7 @@ class Header:
         then it returns an array of bytes with the header attached.
 
         Header format: STAMP + full_length + # + file_name_length + # + file_name + data_size + # + data
-        Example: PAS35#8#password8#demo.txt12#Hello world!
+        Example: ASP35#8#password8#demo.txt12#Hello world!
         """
         result = b""
         if password:
@@ -38,22 +38,24 @@ class Header:
         result += "#".encode()
         result += hidden_bytes
         full_length = str(len(result)).encode() + "#".encode()
-        return (
+        res = (
             (self.STAMP_PASS.encode() if password else self.STAMP.encode())
             + full_length
             + result
         )
+        return res
 
     def validate(self, bytes):
         """
         This function is used to check if the header is valid
         """
-        if "".join(map(chr, bytes[: len(self.STAMP)])) == self.STAMP:
-            return 0
-        elif "".join(map(chr, bytes[: len(self.STAMP_PASS)])) == self.STAMP_PASS:
-            return 1
-        else:
-            return 2
+        return "".join(map(chr, bytes[: len(self.STAMP)])) == self.STAMP
+
+    def contains_password(self, bytes):
+        """
+        This function is used to check if the header contains password
+        """
+        return "".join(map(chr, bytes)) == self.STAMP_PASS[len(self.STAMP_PASS) - 1]
 
     def extract(self, embedded_bytes, password=None):
         """
@@ -63,6 +65,9 @@ class Header:
         i, j = 0, 0
 
         while len(extracted_info) < (3 if password else 2):
+            if password and len(extracted_info) == 1:
+                if password != bytes(extracted_info[0]).decode("utf-8"):
+                    raise ValueError("Password must match.")
             j = i
             while embedded_bytes[j] != ord("#"):
                 j += 1
@@ -152,15 +157,9 @@ class Steganography:
 
         index = 0
         for i in range(skipped_bytes, len(embedded_bytes)):
-            if (
-                len(bits)
-                == len(self.header.STAMP_PASS if password else self.header.STAMP) * 8
-            ):
-                result = self.header.validate(bits_to_bytes(bits))
-                if result == 2:
+            if len(bits) == len(self.header.STAMP) * 8:
+                if not self.header.validate(bits_to_bytes(bits)):
                     raise ValueError("This is not an embedded file.")
-                elif result == 1 and password == None:
-                    raise ValueError("Require password.")
                 else:
                     index = i
                     bits = []
@@ -168,6 +167,24 @@ class Steganography:
             else:
                 bit = (
                     embedded_bytes[i] & 0x1
+                )  # extract last bit of current embedded byte's
+                bits.append(bit)
+
+        for k in range(index, len(embedded_bytes)):
+            if len(bits) > 0 and len(bits) % 8 == 0:
+                if self.header.contains_password(bits_to_bytes(bits)):
+                    if not password:
+                        raise ValueError("Require password.")
+                    else:
+                        index = k
+                        bits = []
+                        break
+                else:
+                    bits = []
+                    break
+            else:
+                bit = (
+                    embedded_bytes[k] & 0x1
                 )  # extract last bit of current embedded byte's
                 bits.append(bit)
 
