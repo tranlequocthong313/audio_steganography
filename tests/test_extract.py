@@ -1,5 +1,6 @@
 import os, shutil
 
+import pytest
 from werkzeug.datastructures import FileStorage
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -7,6 +8,7 @@ from selenium.webdriver.chrome.options import Options
 
 from app import create_app
 from app.utils import format_size
+from app.steganography import Steganography, header_lengths
 
 
 # ========== BLACK BOX ==========
@@ -543,3 +545,109 @@ class TestExtractdingSelenium:
             format_size(os.path.getsize(self.__get_abs_path("file_tests", data_name)))
             not in html
         )
+
+
+# ========== WHITE BOX ==========
+class TestExtractingUnitTest:
+    def setup_method(self):
+        """
+        Thiết lập môi trường cho các phương thức kiểm thử.
+
+        :return: None
+        """
+        self.steganography = Steganography()
+
+    def test_extract_success(self):
+        """
+        Kiểm tra quá trình trích xuất thành công.
+
+        - Đọc dữ liệu ẩn và dữ liệu carrier từ tệp.
+        - Thiết lập mật khẩu và độ dài bỏ qua.
+        - Gọi hàm nhúng và sau đó gọi hàm trích xuất.
+        - Kiểm tra thông tin trích xuất.
+
+        :return: None
+        """
+        filename = "png.png"
+        hidden_bytes = bytearray((open(f"file_tests/{filename}", "rb")).read())
+        carrier_bytes = bytearray((open("file_tests/wav-small.wav", "rb")).read())
+        password = "abc"
+        skipped_bytes = header_lengths["wav"]
+        embedded_bytes = self.steganography.embed(
+            hidden_bytes, carrier_bytes, filename, password, skipped_bytes + 1
+        )
+
+        extracted_info = self.steganography.extract(
+            embedded_bytes, password, skipped_bytes + 1
+        )
+
+        assert bytes(extracted_info["password"]).decode("utf-8") == password
+        assert bytes(extracted_info["filename"]).decode("utf-8") == filename
+        assert extracted_info["data"] == hidden_bytes
+
+    def test_extract_failed_due_to_not_embedded_file(self):
+        """
+        Kiểm tra quá trình trích xuất thất bại khi không có tệp được nhúng.
+
+        - Thiết lập dữ liệu nhúng làm dữ liệu carrier.
+        - Thiết lập mật khẩu và độ dài bỏ qua.
+        - Gọi hàm trích xuất và kiểm tra việc ném ra ngoại lệ ValueError.
+
+        :return: None
+        """
+        embedded_bytes = bytearray((open("file_tests/wav-small.wav", "rb")).read())
+        password = "abc"
+        skipped_bytes = header_lengths["wav"]
+
+        with pytest.raises(ValueError):
+            self.steganography.extract(embedded_bytes, password, skipped_bytes + 1)
+
+    def test_extract_failed_due_to_not_enter_password(self):
+        """
+        Kiểm tra quá trình trích xuất thất bại khi không nhập mật khẩu.
+
+        - Đọc dữ liệu ẩn và dữ liệu carrier từ tệp.
+        - Thiết lập mật khẩu và độ dài bỏ qua.
+        - Gọi hàm nhúng.
+        - Gọi hàm trích xuất mà không nhập mật khẩu và kiểm tra việc ném ra ngoại lệ ValueError.
+
+        :return: None
+        """
+        filename = "png.png"
+        hidden_bytes = bytearray((open(f"file_tests/{filename}", "rb")).read())
+        carrier_bytes = bytearray((open("file_tests/wav-small.wav", "rb")).read())
+        password = "abc"
+        skipped_bytes = header_lengths["wav"]
+
+        embedded_bytes = self.steganography.embed(
+            hidden_bytes, carrier_bytes, filename, password, skipped_bytes + 1
+        )
+
+        with pytest.raises(ValueError):
+            self.steganography.extract(embedded_bytes, None, skipped_bytes + 1)
+
+    def test_extract_failed_due_to_password_not_matches(self):
+        """
+        Kiểm tra quá trình trích xuất thất bại khi mật khẩu không khớp.
+
+        - Đọc dữ liệu ẩn và dữ liệu carrier từ tệp.
+        - Thiết lập mật khẩu và độ dài bỏ qua.
+        - Gọi hàm nhúng.
+        - Gọi hàm trích xuất với mật khẩu không khớp và kiểm tra việc ném ra ngoại lệ ValueError.
+
+        :return: None
+        """
+        filename = "png.png"
+        hidden_bytes = bytearray((open(f"file_tests/{filename}", "rb")).read())
+        carrier_bytes = bytearray((open("file_tests/wav-small.wav", "rb")).read())
+        password = "abc"
+        skipped_bytes = header_lengths["wav"]
+
+        embedded_bytes = self.steganography.embed(
+            hidden_bytes, carrier_bytes, filename, password, skipped_bytes + 1
+        )
+
+        with pytest.raises(ValueError):
+            self.steganography.extract(
+                embedded_bytes, password + "123", skipped_bytes + 1
+            )
