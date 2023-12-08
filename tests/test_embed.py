@@ -1,5 +1,6 @@
 import os, shutil
 
+import pytest
 from werkzeug.datastructures import FileStorage
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -7,6 +8,7 @@ from selenium.webdriver.chrome.options import Options
 
 from app import create_app
 from app.utils import format_size
+from app.steganography import Steganography, header_lengths
 
 
 # ========== BLACK BOX ==========
@@ -518,3 +520,57 @@ class TestEmbeddingSelenium:
         assert (
             format_size(os.path.getsize(self.__get_abs_path(carrier_name))) not in html
         )
+
+
+# ========== WHITE BOX ==========
+class TestEmbeddingUnitTest:
+    def setup_method(self):
+        """
+        Thiết lập môi trường cho các phương thức kiểm thử.
+
+        :return: None
+        """
+        self.steganography = Steganography()
+
+    def test_embed_success(self):
+        """
+        Kiểm tra quá trình nhúng thành công.
+
+        - Đọc dữ liệu ẩn và dữ liệu carrier từ tệp.
+        - Thiết lập mật khẩu và độ dài bỏ qua.
+        - Gọi hàm nhúng và kiểm tra chiều dài của dữ liệu nhúng.
+
+        :return: None
+        """
+        filename = "png.png"
+        hidden_bytes = bytearray((open(f"file_tests/{filename}", "rb")).read())
+        carrier_bytes = bytearray((open("file_tests/wav-small.wav", "rb")).read())
+        password = "abc"
+        skipped_bytes = header_lengths["wav"]
+
+        embedded_bytes = self.steganography.embed(
+            hidden_bytes, carrier_bytes, filename, password, skipped_bytes + 1
+        )
+
+        assert len(embedded_bytes) == len(carrier_bytes)
+
+    def test_embed_failed_due_to_size_overflowed(self):
+        """
+        Kiểm tra quá trình nhúng thất bại do vượt quá kích thước cho phép.
+
+        - Đọc dữ liệu ẩn và dữ liệu carrier từ tệp.
+        - Thiết lập mật khẩu và độ dài bỏ qua.
+        - Gọi hàm nhúng và kiểm tra việc ném ra ngoại lệ OverflowError.
+
+        :return: None
+        """
+        filename = "wav-small.wav"
+        hidden_bytes = bytearray((open(f"file_tests/{filename}", "rb")).read())
+        carrier_bytes = bytearray((open("file_tests/wav-small.wav", "rb")).read())
+        password = "abc"
+        skipped_bytes = header_lengths["wav"]
+
+        with pytest.raises(OverflowError):
+            self.steganography.embed(
+                hidden_bytes, carrier_bytes, filename, password, skipped_bytes + 1
+            )

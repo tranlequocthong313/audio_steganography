@@ -23,7 +23,7 @@ class Header:
         This function takes in an array of data bytes and the name of the original file,
         then it returns an array of bytes with the header attached.
 
-        Header format: STAMP + full_length + # + file_name_length + # + file_name + data_size + # + data
+        Header format: STAMP + full_length + # + password_length + # + password + file_name_length + # + file_name + data_size + # + data
         Example: ASP35#8#password8#demo.txt12#Hello world!
         """
         result = b""
